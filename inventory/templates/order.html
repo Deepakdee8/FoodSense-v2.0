@@ -1,0 +1,104 @@
+{% extends "layout.html" %}
+
+{% block title %}
+FOOD SENSE
+{% endblock %}
+
+{% block content %}
+<!-- main-content-wrap -->
+<div class="main-content-inner">
+    <!-- container -->
+    <div class="container mb-30">
+        <!-- Auto Order Section -->
+        <div class="row mx-3">
+            <div class="col-lg-10">
+                <div class="wg-box">
+                    <div class="flex items-center justify-between">
+                        <h5>Auto Order List</h5>
+                    </div>
+
+                    <div class=" table-recent-orders">
+                        <!-- Table Header -->
+                        <ul class="table-title flex gap20 mb-14">
+                            <li Style="width:25%">
+                                <div class="body-title text-main-dark">Item ID</div>
+                            </li>
+                            <li Style="width:50%">
+                                <div class="body-title text-main-dark">Item Name</div>
+                            </li>
+                            <li Style="width:25%">
+                                <div class="body-title text-main-dark">Quantity</div>
+                            </li>
+                        </ul>
+
+                        <div class="divider mb-14"></div>
+
+                        <!-- Dynamic List -->
+                        <ul class="flex flex-column has-divider-line has-line-bot" id="purchaseList">
+                            <li class="item wg-product gap20">
+                                <div class="body-text text-main-dark mt-4">Loading...</div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <br><br>
+        <button type="button" class="btn btn-success" onclick="fetchAutoOrderData()">Refresh Auto Order List</button>
+    </div>
+</div>
+
+<!-- JavaScript for Auto-Updating Data -->
+<script>
+    function fetchAutoOrderData() {
+        console.log("Fetching auto order data...");  // Log function call
+
+        fetch("/api/receive_autoorder/")  // Ensure this matches your Django API route
+            .then(response => {
+                console.log("API Response received:", response); // Log full response object
+                if (!response.ok) {
+                    throw new Error("API responded with status: " + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("Parsed JSON response:", data); // Log parsed JSON
+
+                const autoorder_list = data.data;  // Ensure response contains "data"
+                console.log("Extracted autoorder_list:", autoorder_list);  // Debug list content
+
+                const tableBody = document.getElementById("purchaseList");
+                tableBody.innerHTML = "";  // Clear old content
+
+                if (!autoorder_list || autoorder_list.length === 0) {
+                    console.log("No items for auto ordering.");
+                    tableBody.innerHTML = "<li><div class='body-text text-main-dark mt-4'>No items for Auto Ordering</div></li>";
+                } else {
+                    autoorder_list.forEach(item => {
+                        console.log("Processing item:", item);  // Log each item in the loop
+
+                        const row = `
+                            <li class="item wg-product gap20">
+                                <div class="body-text text-main-dark mt-4">${item.ItemID}</div>
+                                <div class="body-text text-main-dark mt-4">${item.ItemName}</div>
+                                <div class="body-text text-main-dark mt-4">${item.Quantity} ${item.Units}</div>
+                            </li>`;
+                        tableBody.innerHTML += row;
+                    });
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching data:", error); // Log fetch errors
+            });
+    }
+
+    // Auto-refresh every 5 seconds
+    {% comment %}
+    setInterval(fetchAutoOrderData, 5000);
+    fetchAutoOrderData();
+    {% endcomment %}
+</script>
+
+
+{% endblock %}

@@ -1,0 +1,176 @@
+{% extends "layout.html" %}
+
+{% block title %}
+FOOD SENSE
+{% endblock %}
+
+{% block content %}
+<!-- main-content-wrap -->
+<div class="main-content-inner">
+  <!-- main-content-wrap -->
+
+  <div class="container mb-30">
+    <!-- custom chart -->
+    <div class="row mb-4">
+      <!-- Chart Section -->
+      <div class="container mb-30">
+        <div class="card shadow-sm p-3">
+          <div class="d-flex justify-content-center">
+            <canvas id="realtime_myChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- /custom chart -->
+    <br>
+    <!-- table start -->
+    {% comment %} <div class="row">
+      <div class="wg-box">
+        <div class="flex items-center justify-between">
+          <h5>Stock levels</h5>
+        </div>
+        <div class="wg-table table-recent-orders">
+          <ul class="table-title flex gap20 mb-14">
+            <li>
+              <div class="body-title text-main-dark" style="width: 50px; " !important>Item ID</div>
+            </li>
+            <li>
+              <div class="body-title text-main-dark">Item Name</div>
+            </li>
+            <li>
+              <div class="body-title text-main-dark">Category</div>
+            </li>
+            <li>
+              <div class="body-title text-main-dark">Quantity</div>
+            </li>
+            <li>
+              <div class="body-title text-main-dark">In-Shelf</div>
+            </li>
+          </ul>
+          <div class="divider mb-14"></div>
+          <ul class="flex flex-column has-divider-line has-line-bot">
+            {% for item in items %}
+            <li class="item wg-product gap20">
+              <div class="name">
+                <div class="title mb-0">
+                  <a class="body-text">{{ item.ItemID }}</a>
+                </div>
+              </div>
+              <div class="body-text text-main-dark mt-4">{{ item.Name }}</div>
+              <div class="body-text text-main-dark mt-4">{{ item.Category }}</div>
+              <div class="body-text text-main-dark mt-4">{{ item.Quantity }} {{ item.Units }}</div>
+              <div>
+                <div class="{% if item.InShelf == 'Yes' %}block-available{% else %}block-pending{% endif %} fw-7">
+                  {{ item.InShelf }}
+                </div>
+              </div>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div> {% endcomment %}
+    <!-- table ends -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Chart.js Initialization
+        const ctx = document.getElementById("realtime_myChart").getContext("2d");
+    
+        let chartData = {
+            labels: [],  // Item Names
+            datasets: [
+                {
+                    label: "Initial Quantity",
+                    data: [],
+                    backgroundColor: "rgb(35, 119, 252)", 
+                    borderColor: "rgb(25, 95, 210)",
+                    borderWidth: 1
+                },
+                {
+                    label: "Live Quantity",
+                    data: [],
+                    backgroundColor: "rgb(255, 99, 132)",
+                    borderColor: "rgb(200, 50, 80)",
+                    borderWidth: 1
+                }
+            ]
+        };
+    
+        let myChart = new Chart(ctx, {
+            type: "bar",
+            data: chartData,
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        title: { display: true, text: "Items", font: { size: 14, weight: "bold" } }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: "Quantity", font: { size: 14, weight: "bold" } }
+                    }
+                }
+            }
+        });
+    
+        // Fetch Initial Data from API
+        function fetchInitialData() {
+            fetch("/api/least-quantity-items/")
+                .then(response => response.json())
+                .then(data => {
+                    let items = data.items;
+    
+                    chartData.labels = items.map(item => item.ItemName);
+                    chartData.datasets[0].data = items.map(item => parseInt(item.Threshold));
+                    chartData.datasets[1].data = new Array(items.length).fill(0);  // Placeholder for MQTT data
+    
+                    myChart.update();
+                })
+                .catch(error => console.error("Error fetching initial data:", error));
+        }
+    
+        fetchInitialData();
+    
+        // WebSocket Connection
+        const socket = new WebSocket("ws://127.0.0.1:8000/ws/mqtt/");
+    
+        socket.onmessage = function (event) {
+            const data = JSON.parse(event.data).message;
+            console.log("Received WebSocket Data:", data);
+    
+            updateChart(data);
+        };
+    
+        socket.onopen = function () {
+            console.log("WebSocket connection opened.");
+        };
+    
+        socket.onclose = function () {
+            console.log("WebSocket connection closed.");
+        };
+    
+        // Update Table with MQTT Data
+       
+    
+        // Update Chart with WebSocket Data
+        function updateChart(data) {
+            let itemIndex = chartData.labels.indexOf(data.ItemName);
+    
+            if (itemIndex !== -1) {
+                chartData.datasets[1].data[itemIndex] = parseInt(data.Quantity);
+            } else {
+                chartData.labels.push(data.ItemName);
+                chartData.datasets[0].data.push(0); // No initial API data
+                chartData.datasets[1].data.push(parseInt(data.Quantity));
+            }
+    
+            myChart.update();
+        }
+    </script>
+    <!-- / chart js -->
+  </div>
+</div>
+{% endblock %}
