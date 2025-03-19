@@ -135,7 +135,7 @@ FOOD SENSE
         fetchInitialData();
     
         // WebSocket Connection
-        const socket = new WebSocket("ws://127.0.0.1:8000/ws/mqtt/");
+        const socket = new WebSocket("wss://foodsense.onrender.com/ws/mqtt/");
     
         socket.onmessage = function (event) {
             const data = JSON.parse(event.data).message;
