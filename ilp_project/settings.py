@@ -26,7 +26,11 @@ SECRET_KEY = 'django-insecure-xi%ad%mg)ly9racqn$li4127%cco!5dv4_l6j(jtx57n-na)zc
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['127.0.0.1','.onrender.com']
+ALLOWED_HOSTS = ['127.0.0.1','foodsense.onrender.com', "localhost"]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://foodsense.onrender.com",
+]
 
 
 # Application definition
