@@ -301,12 +301,19 @@ def receive_autoorder(request):
     if request.method == "POST":
         try:
             data = json.loads(request.body)
-            print(f"Raw data: ",data)
             autoorder_list = data.get("autoorder_list", [])
-            print(f"auto order list received:",autoorder_list)
-            # AUTO_ORDER_LIST.clear()
-            AUTO_ORDER_LIST.extend(autoorder_list)
-            return JsonResponse({"message": "Auto-order data received", "data": AUTO_ORDER_LIST}, status=200)
+
+            for new_item in autoorder_list:
+                # Check if the item already exists in AUTO_ORDER_LIST
+                existing_item = next((item for item in AUTO_ORDER_LIST if item['ItemID'] == new_item['ItemID']), None)
+                if existing_item:
+                    # Update existing item
+                    existing_item.update(new_item)
+                else:
+                    # Append new item
+                    AUTO_ORDER_LIST.append(new_item)
+
+            return JsonResponse({"message": "Auto-order data processed", "data": AUTO_ORDER_LIST}, status=200)
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
 
